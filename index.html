@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EventPass — Smart College Fest Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- Navbar -->
+  <nav class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+          <i data-lucide="ticket" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-400">EventPass</span>
+          <span class="hidden sm:inline-block ml-2 text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">PORTAL 2.0</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-1 sm:space-x-3 text-sm font-semibold">
+        <button onclick="switchTab('events')" id="tab-events" class="px-3.5 py-2 rounded-xl text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 transition flex items-center gap-2">
+          <i data-lucide="calendar" class="w-4 h-4"></i> Fest Events
+        </button>
+        <button onclick="switchTab('register')" id="tab-register" class="px-3.5 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-4 h-4"></i> Register
+        </button>
+        <button onclick="switchTab('bookings')" id="tab-bookings" class="px-3.5 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition flex items-center gap-2">
+          <i data-lucide="qr-code" class="w-4 h-4"></i> My Passes
+        </button>
+        <button onclick="switchTab('gate')" id="tab-gate" class="px-3.5 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> Gate Scanner
+        </button>
+        <a href="/docs" target="_blank" class="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition text-xs font-semibold">
+          <i data-lucide="code" class="w-3.5 h-3.5"></i> Swagger API
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Header -->
+  <header class="relative overflow-hidden bg-gradient-to-b from-indigo-950/50 via-slate-950 to-slate-950 border-b border-slate-800/60 py-12 px-6">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+      <div class="space-y-4 max-w-2xl text-center md:text-left">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> FastAPI & ReportLab Ticketing Engine
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+          College Fest Entry & QR Ticketing System
+        </h1>
+        <p class="text-slate-400 text-base sm:text-lg">
+          Reserve seats, instantly issue scannable dynamic QR entry passes, download styled PDF tickets, and verify venue gate check-ins.
+        </p>
+      </div>
+
+      <!-- Live Quick Stats Card -->
+      <div class="grid grid-cols-2 gap-4 w-full md:w-auto min-w-[280px]">
+        <div class="glass-card p-4 rounded-2xl text-center">
+          <span class="text-xs text-slate-400 font-semibold block uppercase tracking-wider">Active Events</span>
+          <span id="stat-events" class="text-2xl font-black text-indigo-400">0</span>
+        </div>
+        <div class="glass-card p-4 rounded-2xl text-center">
+          <span class="text-xs text-slate-400 font-semibold block uppercase tracking-wider">Passes Issued</span>
+          <span id="stat-passes" class="text-2xl font-black text-emerald-400">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Portal Section -->
+  <main class="max-w-7xl mx-auto px-6 py-10 flex-1 w-full">
+
+    <!-- 1. EVENTS TAB -->
+    <section id="sec-events" class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Upcoming Events</h2>
+          <p class="text-slate-400 text-sm">Select an event below to reserve your digital pass.</p>
+        </div>
+        <button onclick="fetchEvents()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-2">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh
+        </button>
+      </div>
+
+      <div id="events-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="col-span-full py-16 text-center text-slate-500 font-medium">
+          Loading events...
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. USER REGISTER TAB -->
+    <section id="sec-register" class="hidden max-w-lg mx-auto space-y-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl font-bold text-white">Student & Attendee Registration</h2>
+        <p class="text-slate-400 text-sm">Register your profile to start reserving fest tickets.</p>
+      </div>
+
+      <form id="user-form" onsubmit="handleUserSubmit(event)" class="glass-card rounded-2xl p-6 sm:p-8 space-y-5 shadow-2xl">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
+          <input type="text" id="user-name" required placeholder="e.g. Prateek Sinha" class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-sm font-medium transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+          <input type="email" id="user-email" required placeholder="e.g. prateek@college.edu" class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-sm font-medium transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Role</label>
+          <select id="user-role" class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-sm font-medium transition">
+            <option value="student">Student</option>
+            <option value="faculty">Faculty Member</option>
+            <option value="guest">Guest</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+          <i data-lucide="user-check" class="w-4 h-4"></i> Create Profile
+        </button>
+      </form>
+    </section>
+
+    <!-- 3. MY PASSES & DOWNLOADS TAB -->
+    <section id="sec-bookings" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Issued Passes & Printable Tickets</h2>
+          <p class="text-slate-400 text-sm">Download your branded PDF ticket with dynamic embedded QR codes.</p>
+        </div>
+        <button onclick="fetchBookings()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-2">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Passes
+        </button>
+      </div>
+
+      <div id="bookings-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="col-span-full py-16 text-center text-slate-500 font-medium">
+          Loading passes...
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. VENUE GATE SCANNER TAB -->
+    <section id="sec-gate" class="hidden max-w-xl mx-auto space-y-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl font-bold text-white">Venue Gate Verification</h2>
+        <p class="text-slate-400 text-sm">Simulate entrance scanning by verifying a Pass ID.</p>
+      </div>
+
+      <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl">
+        <div class="flex gap-2">
+          <input type="text" id="scan-pass-code" placeholder="Enter Pass Code (e.g. PASS-8F3A12B9)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 font-mono text-sm uppercase text-indigo-400 placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+          <button onclick="verifyGatePass()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/30">
+            <i data-lucide="search" class="w-4 h-4"></i> Verify
+          </button>
+        </div>
+
+        <!-- Result Card -->
+        <div id="gate-result" class="hidden p-6 rounded-xl border bg-slate-900/80 space-y-3">
+          <!-- Dynamic Scanner Content -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 hidden transition-all">
+    <div id="toast-body" class="px-5 py-3.5 rounded-xl shadow-2xl border text-sm font-semibold flex items-center gap-3"></div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Tab Switching Logic
+    function switchTab(tab) {
+      ['events', 'register', 'bookings', 'gate'].forEach(t => {
+        document.getElementById(`sec-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-${t}`);
+        btn.className = "px-3.5 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition flex items-center gap-2";
+      });
+
+      document.getElementById(`sec-${tab}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      activeBtn.className = "px-3.5 py-2 rounded-xl text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 transition flex items-center gap-2 font-bold";
+
+      if (tab === 'events') fetchEvents();
+      if (tab === 'bookings') fetchBookings();
+    }
+
+    // Show Toast Message
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const body = document.getElementById('toast-body');
+      
+      body.className = `px-5 py-3.5 rounded-xl shadow-2xl border text-sm font-semibold flex items-center gap-3 ${
+        isError 
+          ? 'bg-red-950/90 text-red-200 border-red-800/80' 
+          : 'bg-emerald-950/90 text-emerald-200 border-emerald-800/80'
+      }`;
+      body.innerHTML = `<span>${message}</span>`;
+
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    // Fetch Events Logic
+    async function fetchEvents() {
+      const grid = document.getElementById('events-grid');
+      try {
+        const res = await fetch('/events/');
+        const events = await res.json();
+
+        document.getElementById('stat-events').innerText = events.length;
+
+        if (events.length === 0) {
+          grid.innerHTML = `<div class="col-span-full py-16 text-center text-slate-500">No active events found. Add one via Swagger API!</div>`;
+          return;
+        }
+
+        grid.innerHTML = events.map(e => `
+          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-5 hover:border-indigo-500/40 transition group">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  ${e.ticket_price === 0 ? 'FREE ENTRY' : '₹' + e.ticket_price}
+                </span>
+                <span class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i> ${e.date}
+                </span>
+              </div>
+              <h3 class="text-xl font-bold text-white group-hover:text-indigo-300 transition">${e.title}</h3>
+              <p class="text-slate-400 text-xs leading-relaxed line-clamp-2">${e.description || 'College Fest Event'}</p>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+              <div>
+                <span class="text-[11px] text-slate-500 font-semibold uppercase block">Seats Left</span>
+                <span class="text-sm font-bold ${e.available_seats > 0 ? 'text-emerald-400' : 'text-red-400'}">
+                  ${e.available_seats} of ${e.total_seats}
+                </span>
+              </div>
+              <button onclick="bookPass(${e.id})" ${e.available_seats <= 0 ? 'disabled' : ''} 
+                class="px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 text-white transition shadow-lg shadow-indigo-600/20 flex items-center gap-1.5">
+                <i data-lucide="ticket" class="w-3.5 h-3.5"></i> ${e.available_seats > 0 ? 'Book Pass' : 'Sold Out'}
+              </button>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      } catch (err) {
+        showToast("Failed to load events.", true);
+      }
+    }
+
+    // Book Pass Prompt
+    async function bookPass(eventId) {
+      const userId = prompt("Enter your Student/User ID to book pass:", "1");
+      if (!userId) return;
+
+      try {
+        const res = await fetch('/book/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: parseInt(userId), event_id: eventId })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Booking failed');
+
+        showToast(`Pass Booked Successfully! Code: ${data.pass_code}`);
+        fetchEvents();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Register User Form Submit
+    async function handleUserSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('user-name').value;
+      const email = document.getElementById('user-email').value;
+      const role = document.getElementById('user-role').value;
+
+      try {
+        const res = await fetch('/users/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, role })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Registration failed');
+
+        showToast(`User Profile Created! User ID: ${data.id}`);
+        document.getElementById('user-form').reset();
+        switchTab('events');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    // Fetch Issued Passes
+    async function fetchBookings() {
+      const container = document.getElementById('bookings-list');
+      try {
+        const res = await fetch('/bookings/');
+        const bookings = await res.json();
+
+        document.getElementById('stat-passes').innerText = bookings.length;
+
+        if (bookings.length === 0) {
+          container.innerHTML = `<div class="col-span-full py-16 text-center text-slate-500">No entry passes issued yet.</div>`;
+          return;
+        }
+
+        container.innerHTML = bookings.map(b => `
+          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border-l-4 border-l-indigo-500">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold font-mono text-indigo-400">${b.booking_id}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">CONFIRMED</span>
+              </div>
+              <div class="text-xs text-slate-400 space-y-1 pt-1">
+                <p><span class="text-slate-500">User ID:</span> #${b.user_id}</p>
+                <p><span class="text-slate-500">Event ID:</span> #${b.event_id}</p>
+              </div>
+            </div>
+
+            <a href="/ticket/${b.booking_id}/pdf" target="_blank" 
+              class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Styled PDF
+            </a>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      } catch (err) {
+        showToast("Failed to fetch passes.", true);
+      }
+    }
+
+    // Venue Gate Scanner Verification
+    async function verifyGatePass() {
+      const passCode = document.getElementById('scan-pass-code').value.trim();
+      const resultDiv = document.getElementById('gate-result');
+
+      if (!passCode) {
+        showToast("Please enter a valid Pass Code", true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/verify/${passCode}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          resultDiv.className = "p-6 rounded-xl border border-red-800/80 bg-red-950/40 space-y-2 text-center";
+          resultDiv.innerHTML = `
+            <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+              <i data-lucide="x-circle" class="w-6 h-6"></i>
+            </div>
+            <h4 class="text-lg font-bold text-red-400">ENTRY DENIED</h4>
+            <p class="text-xs text-slate-400">${data.detail || 'Pass ID not found in database.'}</p>
+          `;
+          resultDiv.classList.remove('hidden');
+          lucide.createIcons();
+          return;
+        }
+
+        resultDiv.className = "p-6 rounded-xl border border-emerald-800/80 bg-emerald-950/40 space-y-3";
+        resultDiv.innerHTML = `
+          <div class="flex items-center gap-3 border-b border-emerald-800/50 pb-3">
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider block">• TICKET VALID</span>
+              <h4 class="text-base font-bold text-white">${data.attendee_name}</h4>
+            </div>
+          </div>
+          <div class="text-xs text-slate-300 space-y-1">
+            <p><span class="text-slate-500">Event:</span> ${data.event_title}</p>
+            <p><span class="text-slate-500">Pass ID:</span> <span class="font-mono text-indigo-400 font-bold">${data.pass_code}</span></p>
+            <p><span class="text-slate-500">Date:</span> ${data.event_date}</p>
+          </div>
+        `;
+        resultDiv.classList.remove('hidden');
+        lucide.createIcons();
+      } catch (err) {
+        showToast("Error verifying pass", true);
+      }
+    }
+
+    // Initial Load
+    fetchEvents();
+    fetchBookings();
+  </script>
+</body>
+</html>
